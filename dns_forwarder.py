@@ -17,12 +17,14 @@ def initialize(host,port):
 
 def messageFromDig(server_socket):
     data, ipaddress_port = server_socket.recvfrom(1024)
-    print(data)
+    # print(data)
     dns_request = DNSRecord.parse(data)
     
-    print(f"Received DNS request from {ipaddress_port}:\n\n\n\n\n{dns_request}\n\n\n\n\n")
-    print("============+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-    return data
+    print(f"Received DNS request from {ipaddress_port}\n")
+    print("dig message request from out client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++start\n")
+    print(dns_request)
+    print("dig message request from our client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++end\n")
+    return data,ipaddress_port
 
 def binary_to_base64url(binary_data):
     # Encode the binary data to base64
@@ -59,30 +61,30 @@ def connectToServer(ipaddress,port,path,dnsmessage):
     # Check if the request was successful (status code 200).
     if response.status_code == 200:
         # Print the response content (the content returned by the server).
-        print(response)
         return response
     else:
         print(f"Request failed with status code {response.status_code}")
-        return ""
-
+        return response
+def communicateMessageBackToDig(server_socket,data,client_address):
+    server_socket.sendto(data, client_address)
     
 def main():
-    print("hello world")
+    print("hello world===============================================================")
     doh_server_address="1.1.1.1"
     server_socket=initialize('0.0.0.0',12345)
     while True:
-        print("===========================start")
-        dns_request=messageFromDig(server_socket)
+        
+        dns_request,ipaddress_port=messageFromDig(server_socket)
         response=connectToServer(doh_server_address,443,"/dns-query",dns_request)
 
-        print("Response Content:================")
+        print("Response Content from doh server:===============================================================start")
         #print(response,"\n\n")
-  
-        print(response.content)
-        print("\n\n")
+        #print(response.content)
+        #print("\n\n")
         
         print(DNSRecord.parse(response.content))
-        # print(dns_request)
+        print("Response Content from doh server end:===============================================================end")
+        communicateMessageBackToDig(server_socket,response.content,ipaddress_port)
         
     
 if __name__ == "__main__":

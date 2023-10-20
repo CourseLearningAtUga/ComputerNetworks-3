@@ -1,23 +1,19 @@
-from dnslib import DNSRecord
+import dns.message
+import dns.rcode
+from dns import query
 
-# Binary DNS data received as bytes (replace this with your actual data)
-binary_data = b'\x86\x06\x01 \x00\x01\x00\x00\x00\x00\x00\x01\x03www\x06google\x03com\x00\x00\x1c\x00\x01\x00\x00)\x04\xd0\x00\x00\x00\x00\x00\x0c\x00\n\x00\x08\x9a\xe5\x951\x90\t}\x8f'
+# Your DNS query in string format
+query_string = "example.com IN A"
 
-# Parse the binary DNS data
-dns_record = DNSRecord.parse(binary_data)
+# Parse the DNS query from the string
+parsed_query = dns.message.from_text(query_string)
 
-# Access the questions in the DNS record
-questions = dns_record.questions
+# Create a DNS response message with an NXDOMAIN response code (RCODE 3) for the query
+response = dns.message.make_response(parsed_query)
+response.set_rcode(dns.rcode.NXDOMAIN)
 
-# Check if there are questions (usually there is only one in a query)
-if questions:
-    question = questions[0]  # Assuming there's only one question
+# Set the ID (16-bit identifier)
+response.id = parsed_query.id
 
-    # Get the record type and domain from the question
-    record_type = question.qtype
-    domain = question.qname
-
-    print("Record Type:", record_type)
-    print("Domain:", domain)
-else:
-    print("No questions in the DNS record.")
+# Print the NXDOMAIN response
+print(response)

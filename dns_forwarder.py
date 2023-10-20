@@ -1,4 +1,4 @@
-from dnslib import DNSRecord
+from dnslib import DNSRecord,QTYPE
 import socket
 import requests
 import base64
@@ -26,9 +26,9 @@ def messageFromDig(server_socket):
     print(f"Received DNS request from {ipaddress_port}\n")
     print("dig message request from out client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++start\n")
     print(dns_request,"\n\n")
-
+    # print(dns_request.questions)
     print("dig message request from our client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++end\n")
-    return data,ipaddress_port,dns_request.questions,dns_request.questions[0].qname
+    return data,ipaddress_port,dns_request.questions,dns_request.questions[0].qname,dns_request.questions[0].qtype
 
 def binary_to_base64url(binary_data):
     # Encode the binary data to base64
@@ -74,9 +74,9 @@ def communicateMessageBackToDig(server_socket,data,client_address):
 
 
 def presentInDenyList(dnsmessage,denylist):
-
+    print(denylist)
     for x in denylist:
-        print(x)
+        # print(x)
         if x==dnsmessage:
             return True
     return False
@@ -108,22 +108,25 @@ def main():
     print("hello world===============================================================")
     doh_server_address="1.1.1.1"
     doh_port=443
-    filename="deny_list.txt"
+    denylist_filename="deny_list.txt"
+    querylog_filename="queries.log"
     server_socket=initialize('0.0.0.0',12345)
     denylist=[]
-    with open(filename, 'r') as file:
+    with open(denylist_filename, 'r') as file:
     # Read each line from the file and split it into a list of strings
         for line in file:
             denylist.append(line.strip())
     while True:
-        dns_request,ipaddress_port,dns_request_message,dns_request_question=messageFromDig(server_socket)
+        dns_request,ipaddress_port,dns_request_message,dns_request_question,dns_request_question_type=messageFromDig(server_socket)
         requestedDnsRequestInDenyList=presentInDenyList(dns_request_question,denylist)
         if requestedDnsRequestInDenyList:
-            print(dns_request_message[0]," in denylist\n")
+            print(dns_request_question," in denylist\n")
             nxdomain_response_data=convert_to_nxdomain(dns_request)
             communicateMessageBackToDig(server_socket,nxdomain_response_data,ipaddress_port)#since UDP protocol cannot say if it was sent
+            with open(querylog_filename, 'a+') as file:
+                file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} DENY\n")
         else:
-            print(dns_request_message[0],"not in denylist\n")
+            print(dns_request_question,"not in denylist\n")
             response=connectToServer(doh_server_address,doh_port,"/dns-query",dns_request)
             print("Response Content from doh server:===============================================================start")
             #print(response,"\n\n")
@@ -132,6 +135,8 @@ def main():
             print(DNSRecord.parse(response.content))
             print("Response Content from doh server end:===============================================================end")
             communicateMessageBackToDig(server_socket,response.content,ipaddress_port)#since UDP protocol cannot say if it was sent
+            with open(querylog_filename, 'a+') as file:
+                file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} ALLOW\n")
         
     
 if __name__ == "__main__":

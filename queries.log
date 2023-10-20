@@ -1,0 +1,9 @@
+www.google.com. A ALLOW
+google.com. A ALLOW
+www.yahoo.co.jp. A ALLOW
+yahoo.co.jp. A DENY
+www.youtube.com. A ALLOW
+www.example.com. A DENY
+www.example.com. A DENY
+www.google.com. A ALLOW
+www.example.com. A DENY

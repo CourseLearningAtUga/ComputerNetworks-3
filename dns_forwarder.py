@@ -26,9 +26,9 @@ def messageFromDig(server_socket):
     print(f"Received DNS request from {ipaddress_port}\n")
     print("dig message request from out client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++start\n")
     print(dns_request,"\n\n")
-    print(dns_request.header.id)
+
     print("dig message request from our client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++end\n")
-    return data,ipaddress_port,dns_request.questions,dns_request.header.id
+    return data,ipaddress_port,dns_request.questions,dns_request.questions[0].qname
 
 def binary_to_base64url(binary_data):
     # Encode the binary data to base64
@@ -74,10 +74,10 @@ def communicateMessageBackToDig(server_socket,data,client_address):
 
 
 def presentInDenyList(dnsmessage,denylist):
-    denylist=["www.google.com","www.yahoo.com","yahoo.co.jp"]
-    print(dnsmessage)
+
     for x in denylist:
-        if x in dnsmessage:
+        print(x)
+        if x==dnsmessage:
             return True
     return False
 
@@ -103,22 +103,23 @@ def convert_to_nxdomain(response_data):
     except dns.exception.DNSException as e:
         print(f"Error converting to NXDOMAIN: {e}")
         return None
-    
-    
-    
+   # !!!!!!!!!!!!!!!!!!!!!! code assumes there is only one question per dig
 def main():
     print("hello world===============================================================")
     doh_server_address="1.1.1.1"
     doh_port=443
-
+    filename="deny_list.txt"
     server_socket=initialize('0.0.0.0',12345)
+    denylist=[]
+    with open(filename, 'r') as file:
+    # Read each line from the file and split it into a list of strings
+        for line in file:
+            denylist.append(line.strip())
     while True:
-        
-        dns_request,ipaddress_port,dns_request_message,dns_request_id=messageFromDig(server_socket)
-        requestedDnsRequestInDenyList=presentInDenyList(str(dns_request_message[0].qname),[])
+        dns_request,ipaddress_port,dns_request_message,dns_request_question=messageFromDig(server_socket)
+        requestedDnsRequestInDenyList=presentInDenyList(dns_request_question,denylist)
         if requestedDnsRequestInDenyList:
             print(dns_request_message[0]," in denylist\n")
-            
             nxdomain_response_data=convert_to_nxdomain(dns_request)
             communicateMessageBackToDig(server_socket,nxdomain_response_data,ipaddress_port)#since UDP protocol cannot say if it was sent
         else:

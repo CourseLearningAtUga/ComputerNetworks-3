@@ -1,19 +1,14 @@
-import dns.message
-import dns.rcode
-from dns import query
+from dnslib import DNSRecord
 
-# Your DNS query in string format
-query_string = "example.com IN A"
+# Example DNS response message data (replace with your actual DNS response message data)
+dns_response_data = b'\x12\x34\x81\x80\x00\x01\x00\x01\x00\x00\x00\x00\x06example\x03com\x00\x00\x01\x00\x01\xc0\x0c\x00\x01\x00\x01\x00\x00\x0e\x10\x00\x04\xd8\xef\x25\x01'
 
-# Parse the DNS query from the string
-parsed_query = dns.message.from_text(query_string)
+# Parse the DNS response message
+dns_record = DNSRecord.parse(dns_response_data)
 
-# Create a DNS response message with an NXDOMAIN response code (RCODE 3) for the query
-response = dns.message.make_response(parsed_query)
-response.set_rcode(dns.rcode.NXDOMAIN)
+# Extract and print the question and domain
+question = dns_record.q
+domain = question.qname
 
-# Set the ID (16-bit identifier)
-response.id = parsed_query.id
-
-# Print the NXDOMAIN response
-print(response)
+print(f"Question: {question.qname} ({question.q.qtype})")
+print(f"Domain: {domain}")

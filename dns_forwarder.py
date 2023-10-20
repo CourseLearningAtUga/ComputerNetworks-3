@@ -2,6 +2,7 @@ from dnslib import DNSRecord
 import socket
 import requests
 import base64
+import tldextract
 
 
 
@@ -24,7 +25,7 @@ def messageFromDig(server_socket):
     print("dig message request from out client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++start\n")
     print(dns_request)
     print("dig message request from our client+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++end\n")
-    return data,ipaddress_port
+    return data,ipaddress_port,dns_request.questions
 
 def binary_to_base64url(binary_data):
     # Encode the binary data to base64
@@ -67,24 +68,47 @@ def connectToServer(ipaddress,port,path,dnsmessage):
         return response
 def communicateMessageBackToDig(server_socket,data,client_address):
     server_socket.sendto(data, client_address)
+
+
+def presentInDenyList(dnsmessage,denylist):
+    denylist=["www.google.com","www.yahoo.com","yahoo.co.jp"]
+    print(dnsmessage)
+    for x in denylist:
+        if x in dnsmessage:
+            return True
+    return False
+    
+    
     
 def main():
     print("hello world===============================================================")
     doh_server_address="1.1.1.1"
+    doh_port=443
     server_socket=initialize('0.0.0.0',12345)
     while True:
         
-        dns_request,ipaddress_port=messageFromDig(server_socket)
-        response=connectToServer(doh_server_address,443,"/dns-query",dns_request)
-
-        print("Response Content from doh server:===============================================================start")
-        #print(response,"\n\n")
-        #print(response.content)
-        #print("\n\n")
-        
-        print(DNSRecord.parse(response.content))
-        print("Response Content from doh server end:===============================================================end")
-        communicateMessageBackToDig(server_socket,response.content,ipaddress_port)
+        dns_request,ipaddress_port,dns_request_message=messageFromDig(server_socket)
+        requestedDnsRequestInDenyList=presentInDenyList(str(dns_request_message[0].qname),[])
+        if requestedDnsRequestInDenyList:
+            print(dns_request_message[0]," in denylist\n")
+            # response=connectToServer(doh_server_address,doh_port,"/dns-query",dns_request)
+            # print("Response Content from doh server:===============================================================start")
+            # #print(response,"\n\n")
+            # #print(response.content)
+            # #print("\n\n")
+            # print(DNSRecord.parse(response.content))
+            # print("Response Content from doh server end:===============================================================end")
+            # communicateMessageBackToDig(server_socket,response.content,ipaddress_port)#since UDP protocol cannot say if it was sent
+        else:
+            print(dns_request_message[0],"not in denylist\n")
+            response=connectToServer(doh_server_address,doh_port,"/dns-query",dns_request)
+            print("Response Content from doh server:===============================================================start")
+            #print(response,"\n\n")
+            #print(response.content)
+            #print("\n\n")
+            print(DNSRecord.parse(response.content))
+            print("Response Content from doh server end:===============================================================end")
+            communicateMessageBackToDig(server_socket,response.content,ipaddress_port)#since UDP protocol cannot say if it was sent
         
     
 if __name__ == "__main__":

@@ -1,5 +1,9 @@
 from dnslib import DNSRecord
 import socket
+import requests
+import base64
+
+
 
 def initialize(host,port):
     # Define the host and port to listen on
@@ -13,21 +17,63 @@ def initialize(host,port):
 
 def messageFromDig(server_socket):
     data, ipaddress_port = server_socket.recvfrom(1024)
+    print(data)
     dns_request = DNSRecord.parse(data)
-    print(f"Received DNS request from {ipaddress_port}:\n\n\n\n\n{dns_request}")
-    return dns_request
     
+    print(f"Received DNS request from {ipaddress_port}:\n\n\n\n\n{dns_request}\n\n\n\n\n")
+    print("============+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+    return data
+
+def binary_to_base64url(binary_data):
+    # Encode the binary data to base64
+    base64_encoded = base64.b64encode(binary_data).decode('utf-8')
+
+    # Replace '+' with '-' and '/' with '_'
+    base64url_encoded = base64_encoded.replace('+', '-').replace('/', '_')
+
+    # Remove any padding '=' characters
+    return base64url_encoded.rstrip('=')
 
 
-    
+def connectToServer(ipaddress,port,path,dnsmessage):
+    # Define the IP address and port (if needed).
+    ip_address = ipaddress  # Replace with the target IP address
+    port = port  # Replace with the target port for HTTPS (usually 443)
+
+    # Define the path or resource on the server.
+    path = path  # Replace with the actual path or resource
+
+    # Define the parameters you want to include in the request as a dictionary.
+    params = {
+        "method" :"GET",
+        "accept" : "application/dns-message",
+        "dns":binary_to_base64url(dnsmessage)
+    }
+
+    # Construct the full URL using the IP address, port, and path.
+    url = f"https://{ip_address}:{port}{path}"
+
+    # Send the GET request with the specified parameters.
+    response = requests.get(url, params=params, verify=False)  # Set 'verify' to False to ignore SSL certificate validation (for testing only)
+
+    # Check if the request was successful (status code 200).
+    if response.status_code == 200:
+        # Print the response content (the content returned by the server).
+        print("Response Content:")
+        print(response.text)
+    else:
+        print(f"Request failed with status code {response.status_code}")
 def main():
     print("hello world")
     doh_server_address="1.1.1.1"
     server_socket=initialize('0.0.0.0',12345)
     while True:
-        
+        print("===========================start")
         dns_request=messageFromDig(server_socket)
-        print("\n\n")
+        connectToServer(doh_server_address,443,"/dns-query",dns_request)
+        # print("\n\n\n",bin(int(dns_request,16)),"\n\n\n")
+
+        
         # print(dns_request)
         
     

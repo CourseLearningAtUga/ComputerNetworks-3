@@ -54,15 +54,18 @@ def connectToServer(ipaddress,port,path,dnsmessage):
     url = f"https://{ip_address}:{port}{path}"
 
     # Send the GET request with the specified parameters.
-    response = requests.get(url, params=params, verify=False)  # Set 'verify' to False to ignore SSL certificate validation (for testing only)
+    response = requests.get(url, params=params)  # Set 'verify' to False to ignore SSL certificate validation (for testing only)
 
     # Check if the request was successful (status code 200).
     if response.status_code == 200:
         # Print the response content (the content returned by the server).
-        print("Response Content:")
-        print(response.text)
+        print(response)
+        return response
     else:
         print(f"Request failed with status code {response.status_code}")
+        return ""
+
+    
 def main():
     print("hello world")
     doh_server_address="1.1.1.1"
@@ -70,10 +73,15 @@ def main():
     while True:
         print("===========================start")
         dns_request=messageFromDig(server_socket)
-        connectToServer(doh_server_address,443,"/dns-query",dns_request)
-        # print("\n\n\n",bin(int(dns_request,16)),"\n\n\n")
+        response=connectToServer(doh_server_address,443,"/dns-query",dns_request)
 
+        print("Response Content:================")
+        #print(response,"\n\n")
+  
+        print(response.content)
+        print("\n\n")
         
+        print(DNSRecord.parse(response.content))
         # print(dns_request)
         
     

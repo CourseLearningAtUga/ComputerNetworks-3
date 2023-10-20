@@ -74,7 +74,7 @@ def communicateMessageBackToDig(server_socket,data,client_address):
 
 
 def presentInDenyList(dnsmessage,denylist):
-    print(denylist)
+    print("deny list is ====",denylist)
     for x in denylist:
         # print(x)
         if x==dnsmessage:
@@ -106,7 +106,7 @@ def convert_to_nxdomain(response_data):
    # !!!!!!!!!!!!!!!!!!!!!! code assumes there is only one question per dig
 def main():
     print("hello world===============================================================")
-    doh_server_address="1.1.1.1"
+    doh_server_address="8.8.8.8"
     doh_port=443
     denylist_filename="deny_list.txt"
     querylog_filename="queries.log"
@@ -120,13 +120,17 @@ def main():
         dns_request,ipaddress_port,dns_request_message,dns_request_question,dns_request_question_type=messageFromDig(server_socket)
         requestedDnsRequestInDenyList=presentInDenyList(dns_request_question,denylist)
         if requestedDnsRequestInDenyList:
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             print(dns_request_question," in denylist\n")
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             nxdomain_response_data=convert_to_nxdomain(dns_request)
             communicateMessageBackToDig(server_socket,nxdomain_response_data,ipaddress_port)#since UDP protocol cannot say if it was sent
             with open(querylog_filename, 'a+') as file:
                 file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} DENY\n")
         else:
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             print(dns_request_question,"not in denylist\n")
+            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             response=connectToServer(doh_server_address,doh_port,"/dns-query",dns_request)
             print("Response Content from doh server:===============================================================start")
             #print(response,"\n\n")

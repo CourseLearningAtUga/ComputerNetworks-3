@@ -7,3 +7,8 @@ www.example.com. A DENY
 www.example.com. A DENY
 www.google.com. A ALLOW
 www.example.com. A DENY
+www.example.com. A DENY
+www.google.com. A ALLOW
+www.google.com. A ALLOW
+www.google.com. A ALLOW
+www.google.com. A ALLOW

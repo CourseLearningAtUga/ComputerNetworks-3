@@ -5,6 +5,8 @@ import requests
 import base64
 import dns.message
 import dns.rcode
+import dns.query
+import dns.resolver
 
 def initialize(host, port):
     # Define the host and port to listen on
@@ -37,14 +39,23 @@ def binary_to_base64url(binary_data):
 
     # Remove any padding '=' characters
     return base64url_encoded.rstrip('=')
+def connectToDnsServer(ip_address,port, dnsmessage):
+    # Create a UDP socket
+    sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-def connectToServer(ipaddress, port, path, dnsmessage):
-    # Define the IP address and port (if needed).
-    ip_address = ipaddress  # Replace with the target IP address
-    port = port  # Replace with the target port for HTTPS (usually 443)
+    try:
+        sock.sendto(dnsmessage, (ip_address, port))
+        response, _ = sock.recvfrom(1024)  
+        return response
+    except socket.error as e:
+        print(f'Error: {e}')
+        return response
+    finally:
+        sock.close()
 
-    # Define the path or resource on the server.
-    path = path  # Replace with the actual path or resource
+
+        
+def connectToDohServer(ip_address, port, path, dnsmessage):
 
     # Define the parameters you want to include in the request as a dictionary.
     params = {
@@ -111,13 +122,16 @@ def main(args):
     doh_port = 443
     denylist_filename = args.DENY_LIST_FILE
     querylog_filename = args.LOG_FILE
-    
+    dns_server=args.DST_IP
+    dns_port=53
+    print("server===============",dns_server)
+    print("logfile===================",querylog_filename)
     # Check if both --doh and --doh_server are used simultaneously
     if args.doh and args.DOH_SERVER:
         print("Error: Cannot use --doh and --doh_server together.")
         return
     
-    server_socket = initialize('0.0.0.0', 53)
+    server_socket = initialize('0.0.0.0', 12345)
     denylist = []
     
     with open(denylist_filename, 'r') as file:
@@ -130,24 +144,33 @@ def main(args):
         requestedDnsRequestInDenyList = presentInDenyList(dns_request_question, denylist)
         
         if requestedDnsRequestInDenyList:
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-            print(dns_request_question, " in denylist\n")
-            print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-            nxdomain_response_data = convert_to_nxdomain(dns_request)
-            communicateMessageBackToDig(server_socket, nxdomain_response_data, ipaddress_port)  # since UDP protocol cannot say if it was sent
-            with open(querylog_filename, 'a+') as file:
-                file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} DENY\n")
+                print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+                print(dns_request_question, " in denylist\n")
+                print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
+                nxdomain_response_data = convert_to_nxdomain(dns_request)
+                communicateMessageBackToDig(server_socket, nxdomain_response_data, ipaddress_port)  # since UDP protocol cannot say if it was sent
+                if querylog_filename:
+                    with open(querylog_filename, 'a+') as file:
+                        file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} DENY\n")
         else:
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             print(dns_request_question, " not in denylist\n")
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
-            response = connectToServer(doh_server_address, doh_port, "/dns-query", dns_request)
-            print("Response Content from doh server: ================================================= start")
-            #print(DNSRecord.parse(response.content))
-            print("Response Content from doh server: ================================================= end")
-            communicateMessageBackToDig(server_socket, response.content, ipaddress_port)  # since UDP protocol cannot say if it was sent
-            with open(querylog_filename, 'a+') as file:
-                file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} ALLOW\n")
+            if dns_server:
+                response=connectToDnsServer(dns_server,dns_port, dns_request)
+                print("Response Content from DNS server: ================================================= start")
+                print(DNSRecord.parse(response))
+                print("Response Content from DNS server: ================================================= end")
+                communicateMessageBackToDig(server_socket, response, ipaddress_port)
+            else:
+                response = connectToDohServer(doh_server_address, doh_port, "/dns-query", dns_request)
+                print("Response Content from doh server: ================================================= start")
+                # print(DNSRecord.parse(response.content))
+                print("Response Content from doh server: ================================================= end")
+                communicateMessageBackToDig(server_socket, response.content, ipaddress_port)  # since UDP protocol cannot say if it was sent
+            if querylog_filename:
+                with open(querylog_filename, 'a+') as file:
+                    file.write(f"{dns_request_question} {QTYPE[dns_request_question_type]} ALLOW\n")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

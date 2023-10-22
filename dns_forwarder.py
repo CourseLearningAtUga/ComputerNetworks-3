@@ -181,7 +181,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", dest="DST_IP", help="Destination DNS server IP")
     parser.add_argument("-f", dest="DENY_LIST_FILE", help="File containing domains to block", required = True)
-    parser.add_argument("-l", dest="LOG_FILE", help="Log file for query results", required = True)
+    parser.add_argument("-l", dest="LOG_FILE", help="Log file for query results")
     parser.add_argument("--doh", action="store_true", help="Use default upstream DoH server")
     parser.add_argument("--doh_server", dest="DOH_SERVER", help="Use this upstream DoH server")
 

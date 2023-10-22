@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from dnslib import DNSRecord, QTYPE
 import argparse
 import socket
@@ -5,8 +6,6 @@ import requests
 import base64
 import dns.message
 import dns.rcode
-import dns.query
-import dns.resolver
 
 def initialize(host, port):
     # Define the host and port to listen on
@@ -112,6 +111,9 @@ def convert_to_nxdomain(response_data):
         return None
 
 def main(args):
+    if not (args.doh or args.DOH_SERVER or args.DST_IP):
+        print("Error: You must use -d if neither --doh nor --doh_server are specified.")
+        return
 
     if args.doh:
         # If --doh is used, set the default DOH server to "1.1.1.1"
@@ -131,7 +133,7 @@ def main(args):
         print("Error: Cannot use --doh and --doh_server together.")
         return
     
-    server_socket = initialize('0.0.0.0', 12345)
+    server_socket = initialize('0.0.0.0', 53)
     denylist = []
     
     with open(denylist_filename, 'r') as file:
@@ -178,8 +180,8 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", dest="DST_IP", help="Destination DNS server IP")
-    parser.add_argument("-f", dest="DENY_LIST_FILE", help="File containing domains to block")
-    parser.add_argument("-l", dest="LOG_FILE", help="Log file for query results")
+    parser.add_argument("-f", dest="DENY_LIST_FILE", help="File containing domains to block", required = True)
+    parser.add_argument("-l", dest="LOG_FILE", help="Log file for query results", required = True)
     parser.add_argument("--doh", action="store_true", help="Use default upstream DoH server")
     parser.add_argument("--doh_server", dest="DOH_SERVER", help="Use this upstream DoH server")
 

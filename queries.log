@@ -1,2 +1,3 @@
 www.example.com. AAAA DENY
 www.google.com. AAAA ALLOW
+www.google.com. AAAA ALLOW

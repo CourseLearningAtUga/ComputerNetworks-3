@@ -112,20 +112,20 @@ def convert_to_nxdomain(response_data):
         return None
 
 def main(args):
-    print("hello world ===============================================================")
+
     if args.doh:
         # If --doh is used, set the default DOH server to "1.1.1.1"
         doh_server_address = "1.1.1.1"
     else:
         doh_server_address = str(args.DOH_SERVER)
-    
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ important variables +++++++++++++++++++++++++++++++++++++++++++++++++++++++
     doh_port = 443
     denylist_filename = args.DENY_LIST_FILE
     querylog_filename = args.LOG_FILE
     dns_server=args.DST_IP
     dns_port=53
-    print("server===============",dns_server)
-    print("logfile===================",querylog_filename)
+    # +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ important variables +++++++++++++++++++++++++++++++++++++++++++++++++++++++
+    
     # Check if both --doh and --doh_server are used simultaneously
     if args.doh and args.DOH_SERVER:
         print("Error: Cannot use --doh and --doh_server together.")
@@ -158,15 +158,18 @@ def main(args):
             print("+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++\n")
             if dns_server:
                 response=connectToDnsServer(dns_server,dns_port, dns_request)
-                print("Response Content from DNS server: ================================================= start")
+                print("Response Content from DNS server: ======================================================================================================== start")
+                print("Response Content from DNS server: ======================================================================================================== start")
                 print(DNSRecord.parse(response))
-                print("Response Content from DNS server: ================================================= end")
+                print("Response Content from DNS server: ========================================================================================================== end")
+                print("Response Content from DNS server: ========================================================================================================== end")
                 communicateMessageBackToDig(server_socket, response, ipaddress_port)
             else:
                 response = connectToDohServer(doh_server_address, doh_port, "/dns-query", dns_request)
-                print("Response Content from doh server: ================================================= start")
-                # print(DNSRecord.parse(response.content))
-                print("Response Content from doh server: ================================================= end")
+                print("Response Content from doh server: ========================================================================================================= start")
+                print(DNSRecord.parse(response.content))
+                print("Response Content from doh server: =========================================================================================================== end")
+                print("Response Content from doh server: =========================================================================================================== end")
                 communicateMessageBackToDig(server_socket, response.content, ipaddress_port)  # since UDP protocol cannot say if it was sent
             if querylog_filename:
                 with open(querylog_filename, 'a+') as file:

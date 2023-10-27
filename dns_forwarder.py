@@ -85,7 +85,7 @@ def main(args):
         return
 
     if args.doh:
-        doh_server_address = "1.1.1.1"
+        doh_server_address = "8.8.8.8"
     else:
         doh_server_address = str(args.DOH_SERVER)
         
